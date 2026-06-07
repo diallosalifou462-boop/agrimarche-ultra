@@ -45,7 +45,7 @@ interface Cart {
 export default function CartPage() {
   const router = useRouter();
   const { cart, removeFromCart, updateQuantity, clearCart } = useCart() as { cart: Cart; removeFromCart: (id: string) => void; updateQuantity: (id: string, quantity: number) => void; clearCart: () => void };
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [quote, setQuote] = useState('');
 
@@ -53,6 +53,9 @@ export default function CartPage() {
     setMounted(true);
     setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   }, []);
+
+  // ⚠️ PAS de redirection automatique ici
+  // La seule redirection se fait au moment du clic sur "Passer la commande"
 
   const handleCheckout = () => {
     if (!user) {
@@ -62,7 +65,14 @@ export default function CartPage() {
     router.push('/checkout');
   };
 
-  if (!mounted) return null;
+  // ✅ Attendre que la page soit montée pour éviter les erreurs d'hydratation
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (cart.items.length === 0) {
     return (
