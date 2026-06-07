@@ -16,6 +16,9 @@ import {
   Shield,
 } from 'lucide-react';
 
+// ✅ IMPORTANT: Désactiver complètement le SSR pour cette page
+export const forceDynamic = 'force-dynamic';
+
 export default function RegisterPage() {
   const router = useRouter();
   const { signUp, user, loading: authLoading } = useAuth();
@@ -64,7 +67,6 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // ✅ CORRECTION : 3 arguments (email, password, name)
       await signUp(formData.email, formData.password, formData.name);
       router.push('/auth/login');
     } catch (error) {
@@ -74,7 +76,8 @@ export default function RegisterPage() {
     }
   };
 
-  if (!isClient || authLoading) {
+  // ✅ Ne rien rendre côté serveur
+  if (!isClient) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center">
         <div className="text-center">
@@ -251,4 +254,4 @@ export default function RegisterPage() {
       </div>
     </div>
   );
-}devicePixelRatio
+}
