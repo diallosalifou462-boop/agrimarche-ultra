@@ -26,7 +26,7 @@ export default function LoginPage() {
         const role = userData?.role || 'client';
         
         if (role === 'admin') {
-          router.push('/admin/dashboard');
+          router.push('/admin');
         } else if (role === 'seller') {
           router.push('/seller/dashboard');
         } else {
@@ -59,7 +59,7 @@ export default function LoginPage() {
       
       // ✅ Rediriger selon le rôle
       if (role === 'admin') {
-        router.push('/admin/dashboard');
+        router.push('/admin');
       } else if (role === 'seller') {
         router.push('/seller/dashboard');
       } else {
