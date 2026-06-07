@@ -5,6 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/firebase';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,11 +16,26 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ✅ Rediriger si déjà connecté
+  // ✅ Rediriger selon le rôle si déjà connecté
   useEffect(() => {
-    if (user && !authLoading) {
-      router.push('/main/products');
-    }
+    const redirectBasedOnRole = async () => {
+      if (user && !authLoading) {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        const userData = userSnap.data();
+        const role = userData?.role || 'client';
+        
+        if (role === 'admin') {
+          router.push('/admin/dashboard');
+        } else if (role === 'seller') {
+          router.push('/seller/dashboard');
+        } else {
+          router.push('/main/products');
+        }
+      }
+    };
+    
+    redirectBasedOnRole();
   }, [user, authLoading, router]);
 
   const handleLogin = async () => {
@@ -32,8 +49,22 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await signIn(email, password);
-      router.push('/main/products');
+      const result = await signIn(email, password);
+      
+      // ✅ Récupérer le rôle après connexion
+      const userRef = doc(db, 'users', result.user.uid);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.data();
+      const role = userData?.role || 'client';
+      
+      // ✅ Rediriger selon le rôle
+      if (role === 'admin') {
+        router.push('/admin/dashboard');
+      } else if (role === 'seller') {
+        router.push('/seller/dashboard');
+      } else {
+        router.push('/main/products');
+      }
     } catch (error) {
       setError('Email ou mot de passe incorrect');
     } finally {
