@@ -597,6 +597,7 @@ const PAYMENT_METHODS_CONFIG = {
     icon: <Smartphone size={17} />,
     fee: 2,
     paymentLink: null,
+    merchantPhone: '77 974 70 73',
     minAmount: 100,
     maxAmount: 1000000,
   },
@@ -697,7 +698,15 @@ function PaymentModal({ method, amount, onConfirm, onBack }: PaymentStepProps) {
               : <>
                   <p style={{ fontSize:13, fontWeight:500, color:'var(--ink)', marginBottom:3 }}>Paiement Orange Money</p>
                   <p style={{ fontSize:12, color:'var(--ink-lt)', lineHeight:1.5 }}>
-                    Envoyez <strong>{totalWithFee.toLocaleString()} FCFA</strong> au numéro marchand, puis copiez l'ID de transaction reçu par SMS.
+                    Envoyez <strong>{totalWithFee.toLocaleString()} FCFA</strong> au numéro marchand :
+                  </p>
+                  <div style={{ marginTop:8, padding:'8px 14px', background:'linear-gradient(135deg, #FFF8EE, #FFF0D4)', borderRadius:8, border:'1px solid #FFD580', display:'inline-block' }}>
+                    <span style={{ fontFamily:'monospace', fontSize:16, fontWeight:700, color:'#E87800', letterSpacing:'0.08em' }}>
+                      📱 +221 {(method as any).merchantPhone}
+                    </span>
+                  </div>
+                  <p style={{ fontSize:11, color:'var(--ink-lt)', marginTop:6 }}>
+                    Composez <strong>#144#</strong> depuis votre téléphone Orange.
                   </p>
                 </>
             }
