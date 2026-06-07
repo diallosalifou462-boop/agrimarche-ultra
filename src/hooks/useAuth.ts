@@ -29,9 +29,10 @@ export function useAuth() {
         const defaultProfile = {
           uid,
           email,
-          displayName: user?.displayName || '',
+          displayName: '',
           phone: '',
           role: 'client',
+          createdAt: new Date().toISOString(),
         };
         await setDoc(userRef, defaultProfile);
         setProfile(defaultProfile);
@@ -64,6 +65,7 @@ export function useAuth() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('🔐 AUTH STATE CHANGED:', firebaseUser?.email || 'No user');
       setUser(firebaseUser);
       
       if (firebaseUser) {
@@ -79,34 +81,56 @@ export function useAuth() {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    await fetchUserProfile(result.user.uid, result.user.email);
-    return result;
+    console.log('🔑 SIGN IN CALLED for:', email);
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      console.log('✅ SIGN IN SUCCESS:', result.user.email);
+      await fetchUserProfile(result.user.uid, result.user.email);
+      return result;
+    } catch (error) {
+      console.error('❌ SIGN IN ERROR:', error);
+      throw error;
+    }
   };
 
   const signUp = async (email: string, password: string, name: string) => {
-    const result = await createUserWithEmailAndPassword(auth, email, password);
-    
-    await updateProfile(result.user, { displayName: name });
-    
-    const userRef = doc(db, 'users', result.user.uid);
-    const userProfile = {
-      uid: result.user.uid,
-      email: email,
-      displayName: name,
-      phone: '',
-      role: 'client',
-    };
-    await setDoc(userRef, userProfile);
-    
-    setProfile(userProfile);
-    return result;
+    console.log('📝 SIGN UP CALLED for:', email);
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      
+      await updateProfile(result.user, { displayName: name });
+      
+      const userRef = doc(db, 'users', result.user.uid);
+      const userProfile = {
+        uid: result.user.uid,
+        email: email,
+        displayName: name,
+        phone: '',
+        role: 'client',
+        createdAt: new Date().toISOString(),
+      };
+      await setDoc(userRef, userProfile);
+      
+      setProfile(userProfile);
+      console.log('✅ SIGN UP SUCCESS:', email);
+      return result;
+    } catch (error) {
+      console.error('❌ SIGN UP ERROR:', error);
+      throw error;
+    }
   };
 
   const logout = async () => {
-    await signOut(auth);
-    setProfile(null);
-    setUser(null);
+    console.log('🚪 LOGOUT CALLED');
+    try {
+      await signOut(auth);
+      setProfile(null);
+      setUser(null);
+      console.log('✅ LOGOUT SUCCESS');
+    } catch (error) {
+      console.error('❌ LOGOUT ERROR:', error);
+      throw error;
+    }
   };
 
   return {
