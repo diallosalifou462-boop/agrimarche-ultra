@@ -16,7 +16,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ✅ Rediriger selon le rôle si déjà connecté
+  // ✅ Rediriger selon le rôle
   useEffect(() => {
     const redirectBasedOnRole = async () => {
       if (user && !authLoading) {
@@ -80,7 +80,6 @@ export default function LoginPage() {
       }}
     >
       <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md">
-        {/* LOGO */}
         <div className="flex flex-col items-center mb-6">
           <Image
             src="/logo.png"
@@ -97,14 +96,12 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* ERROR */}
         {error && (
           <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl mb-4">
             {error}
           </div>
         )}
 
-        {/* EMAIL */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Email
@@ -118,7 +115,6 @@ export default function LoginPage() {
           />
         </div>
 
-        {/* PASSWORD */}
         <div className="mb-5">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Mot de passe
@@ -132,7 +128,6 @@ export default function LoginPage() {
           />
         </div>
 
-        {/* BUTTON */}
         <button
           onClick={handleLogin}
           disabled={loading}
@@ -141,7 +136,6 @@ export default function LoginPage() {
           {loading ? 'Connexion...' : 'Se connecter'}
         </button>
 
-        {/* REGISTER */}
         <p className="text-center text-sm text-gray-600 mt-6">
           Pas encore de compte ?{' '}
           <Link
