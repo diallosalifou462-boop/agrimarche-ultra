@@ -3,12 +3,13 @@
 import { Router, Request, Response } from 'express';
 import { body, param, validationResult } from 'express-validator';
 import crypto from 'crypto';
-import admin from 'firebase-admin';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getApp } from 'firebase-admin/app';
 import rateLimit from 'express-rate-limit';
 import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
-const db = () => admin.firestore();
+const db = () => getFirestore();
 
 // Rate limiter strict pour les paiements
 const paymentLimiter = rateLimit({ windowMs: 60_000, max: 5 });
@@ -106,7 +107,7 @@ router.post(
         paymentToken:  paytechData.token,
         paymentMethod: method,
         paymentStatus: 'pending',
-        updatedAt:     admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt:     FieldValue.serverTimestamp(),
       });
 
       res.json({ paymentUrl: paytechData.redirect_url, token: paytechData.token });
@@ -118,11 +119,8 @@ router.post(
 );
 
 // ─── POST /api/payments/webhook ───────────────────────────────────────────────
-// PayTech envoie un POST avec le body brut (raw Buffer via express.raw dans server.ts).
-// On parse manuellement pour pouvoir vérifier la signature HMAC avant tout parsing.
 router.post('/webhook', async (req: Request, res: Response) => {
   try {
-    // FIX : req.body est un Buffer (express.raw), pas un objet parsé
     const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : JSON.stringify(req.body);
     let body: any;
     try {
@@ -133,11 +131,9 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
     const { ref_command: orderId, type_event: eventType, token } = body;
 
-    // Vérifier la signature PayTech
     const receivedSig = req.headers['x-paytech-signature'] as string | undefined;
     if (PAYTECH_API_SECRET && receivedSig) {
       const expectedSig = paytechSignature({ token, ref_command: orderId });
-      // FIX : timingSafeEqual exige des buffers de même longueur — on compare les hex
       const receivedBuf = Buffer.from(receivedSig,  'hex');
       const expectedBuf = Buffer.from(expectedSig, 'hex');
       if (
@@ -159,12 +155,10 @@ router.post('/webhook', async (req: Request, res: Response) => {
       await orderRef.update({
         paymentStatus: 'paid',
         status:        'confirmed',
-        paidAt:        admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt:     admin.firestore.FieldValue.serverTimestamp(),
+        paidAt:        FieldValue.serverTimestamp(),
+        updatedAt:     FieldValue.serverTimestamp(),
       });
 
-      // FIX : notifications stockées dans /notifications/{sellerId}/items/{autoId}
-      // pour correspondre aux Firestore rules : match /notifications/{userId}/items/{notifId}
       const order = orderDoc.data()!;
       await db()
         .collection('notifications')
@@ -177,13 +171,13 @@ router.post('/webhook', async (req: Request, res: Response) => {
           body:      `Commande #${orderId.slice(-6).toUpperCase()} payée — ${order.total.toLocaleString()} FCFA`,
           read:      false,
           orderId,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
         });
 
     } else if (eventType === 'sale_canceled') {
       await orderRef.update({
         paymentStatus: 'failed',
-        updatedAt:     admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt:     FieldValue.serverTimestamp(),
       });
     }
 
@@ -204,10 +198,10 @@ router.get(
     try {
       const orderId = String(req.params.orderId);
 
-const doc = await db()
-  .collection('orders')
-  .doc(orderId)
-  .get();
+      const doc = await db()
+        .collection('orders')
+        .doc(orderId)
+        .get();
       if (!doc.exists) return res.status(404).json({ error: 'Commande introuvable' });
       const data = doc.data()!;
       if (data.userId !== req.user!.uid && req.user?.role !== 'admin') {
