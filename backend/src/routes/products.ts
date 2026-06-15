@@ -1,18 +1,18 @@
-
+﻿
 // backend/src/routes/products.ts
 import { Router, Request, Response } from 'express';
 import { body, query, param, validationResult } from 'express-validator';
-import admin from 'firebase-admin';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import rateLimit from 'express-rate-limit';
 import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
-const db = () => admin.firestore();
+const db = () => getFirestore();
 
 // Rate limiter pour les mutations
 const writeLimiter = rateLimit({ windowMs: 60_000, max: 20 });
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function validationErrors(req: Request, res: Response): boolean {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -22,7 +22,7 @@ function validationErrors(req: Request, res: Response): boolean {
   return false;
 }
 
-// ─── GET /api/products ────────────────────────────────────────────────────────
+// â”€â”€â”€ GET /api/products â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get(
   '/',
   [
@@ -67,7 +67,7 @@ router.get(
   }
 );
 
-// ─── GET /api/products/:id ────────────────────────────────────────────────────
+// â”€â”€â”€ GET /api/products/:id â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get(
   '/:id',
   [param('id').isString().trim()],
@@ -88,7 +88,7 @@ router.get(
   }
 );
 
-// ─── POST /api/products ───────────────────────────────────────────────────────
+// â”€â”€â”€ POST /api/products â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.post(
   '/',
   authMiddleware,
@@ -98,7 +98,7 @@ router.post(
     body('description').isString().trim().isLength({ min: 10, max: 2000 }),
     body('price').isFloat({ min: 0 }),
     body('stock').isInt({ min: 0 }),
-    body('unit').isString().trim().isIn(['kg', 'g', 'litre', 'ml', 'pièce', 'sac', 'botte', 'carton']),
+    body('unit').isString().trim().isIn(['kg', 'g', 'litre', 'ml', 'piÃ¨ce', 'sac', 'botte', 'carton']),
     body('categoryId').isString().trim(),
     body('category').isString().trim(),
     body('images').isArray({ min: 1, max: 5 }),
@@ -111,11 +111,11 @@ router.post(
     if (validationErrors(req, res)) return;
 
     if (req.user?.role !== 'seller' && req.user?.role !== 'admin') {
-      return res.status(403).json({ error: 'Réservé aux vendeurs' });
+      return res.status(403).json({ error: 'RÃ©servÃ© aux vendeurs' });
     }
 
     try {
-      const now = admin.firestore.FieldValue.serverTimestamp();
+      const now = FieldValue.serverTimestamp();
       const data = {
         name: req.body.name,
         description: req.body.description,
@@ -148,7 +148,7 @@ router.post(
   }
 );
 
-// ─── PATCH /api/products/:id ──────────────────────────────────────────────────
+// â”€â”€â”€ PATCH /api/products/:id â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.patch(
   '/:id',
   authMiddleware,
@@ -177,12 +177,12 @@ router.patch(
 
       const data = doc.data()!;
       if (data.sellerId !== req.user?.uid && req.user?.role !== 'admin') {
-        return res.status(403).json({ error: 'Accès interdit' });
+        return res.status(403).json({ error: 'AccÃ¨s interdit' });
       }
 
       const allowed = ['name', 'description', 'price', 'originalPrice', 'stock', 'unit',
         'categoryId', 'category', 'images', 'isOrganic', 'location', 'tags', 'status'];
-      const updates: Record<string, any> = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+      const updates: Record<string, any> = { updatedAt: FieldValue.serverTimestamp() };
       for (const key of allowed) {
         if (req.body[key] !== undefined) updates[key] = req.body[key];
       }
@@ -195,7 +195,7 @@ router.patch(
   }
 );
 
-// ─── DELETE /api/products/:id ─────────────────────────────────────────────────
+// â”€â”€â”€ DELETE /api/products/:id â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.delete(
   '/:id',
   authMiddleware,
@@ -214,13 +214,13 @@ router.delete(
 
       const data = doc.data()!;
       if (data.sellerId !== req.user?.uid && req.user?.role !== 'admin') {
-        return res.status(403).json({ error: 'Accès interdit' });
+        return res.status(403).json({ error: 'AccÃ¨s interdit' });
       }
 
       await docRef.update({
         status: 'inactive',
-        deletedAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        deletedAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
       });
 
       res.json({ success: true });
@@ -230,7 +230,7 @@ router.delete(
   }
 );
 
-// ─── GET /api/products/seller/:sellerId ───────────────────────────────────────
+// â”€â”€â”€ GET /api/products/seller/:sellerId â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get(
   '/seller/:sellerId',
   [param('sellerId').isString().trim()],
@@ -254,3 +254,6 @@ router.get(
 );
 
 export default router;
+
+
+
