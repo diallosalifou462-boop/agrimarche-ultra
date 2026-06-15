@@ -13,6 +13,7 @@
     "express": "^5.2.1",
     "firebase": "^12.14.0",
     "firebase-admin": "^14.0.0",
+    "helmet": "^8.2.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.17.0",
     "next": "^16.2.9",
@@ -29,6 +30,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/helmet": "^0.0.48",
     "@types/leaflet": "^1.9.21",
     "@types/react": "19.2.17",
     "@types/xlsx": "^0.0.35",
