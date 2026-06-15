@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { auth, db } from '@/lib/firebase/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -52,6 +53,16 @@ export default function SellerProductsPage() {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         router.replace('/auth/login');
+        return;
+      }
+
+      // Vérifier que le profil vendeur est complet
+      const { doc: fsDoc, getDoc: fsGet } = await import('firebase/firestore');
+      const userSnap = await fsGet(fsDoc(db, 'users', user.uid));
+      if (!userSnap.exists()) { router.replace('/seller/register'); return; }
+      const ud = userSnap.data();
+      if (!ud?.displayName?.trim() || !ud?.phone?.trim() || !ud?.region?.trim()) {
+        router.replace('/seller/register');
         return;
       }
 
@@ -255,9 +266,9 @@ export default function SellerProductsPage() {
                 <div className="flex p-4 gap-4">
                   {/* Image */}
                   <div className="relative w-20 h-20 flex-shrink-0">
-                    <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/50 dark:to-teal-900/50 rounded-xl flex items-center justify-center overflow-hidden">
+                    <div className="relative w-full h-full bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/50 dark:to-teal-900/50 rounded-xl flex items-center justify-center overflow-hidden">
                       {product.images?.[0] ? (
-                        <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                        <Image src={product.images[0]} alt={product.name} fill style={{ objectFit: "cover" }} sizes="80px" />
                       ) : (
                         <Package size={28} className="text-emerald-500 dark:text-emerald-400" />
                       )}

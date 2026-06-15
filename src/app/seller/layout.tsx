@@ -32,22 +32,32 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
       // ✅ Écoute temps réel du profil utilisateur
       const userRef = doc(db, 'users', user.uid);
       const unsubDoc = onSnapshot(userRef, (docSnap) => {
+        console.log('=== LAYOUT DEBUG ===');
+        console.log('docSnap exists:', docSnap.exists());
         if (docSnap.exists()) {
           const userProfile = docSnap.data();
-          const allowedRoles = ['seller', 'both', 'admin'];
+          console.log('userProfile:', userProfile);
+          console.log('displayName:', userProfile.displayName);
+          console.log('phone:', userProfile.phone);
+          console.log('region:', userProfile.region);
+          console.log('role:', userProfile.role);
+          const hasFields = !!(userProfile.displayName?.trim() && userProfile.phone?.trim() && userProfile.region?.trim());
+          console.log('hasFields:', hasFields);
           
-          if (!allowedRoles.includes(userProfile.role)) {
+          if (!hasFields) {
+            console.log('→ Redirection register (champs manquants)');
             router.push('/seller/register');
           } else {
+            console.log('→ Profil OK, accès autorisé');
             setProfile(userProfile);
           }
         } else {
+          console.log('→ Document inexistant, redirection register');
           router.push('/seller/register');
         }
         setLoading(false);
       }, (error) => {
-        console.error('Erreur profil:', error);
-        router.push('/seller/register');
+        console.error('Erreur layout:', error);
         setLoading(false);
       });
 
@@ -100,7 +110,7 @@ export default function SellerLayout({ children }: { children: React.ReactNode }
                 <span className="text-sm font-medium">{profile.displayName}</span>
                 <span className="text-xs text-emerald-200">{profile.role}</span>
               </div>
-              <Link href="/" className="p-2 hover:bg-white/10 rounded-xl transition text-sm">
+              <Link href="/main" className="p-2 hover:bg-white/10 rounded-xl transition text-sm">
                 Quitter
               </Link>
             </div>

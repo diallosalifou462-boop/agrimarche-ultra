@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   DollarSign, ShoppingBag, Package, Star,
   Clock, TrendingUp, Award, Navigation, ChevronRight,
@@ -22,8 +23,27 @@ import {
 import ReviewsSection from '@/components/ReviewsSection';
 import SalesChart from '@/components/SalesChart';
 import TopProductsList from '@/components/TopProductsList';
-import { getDailySales, getTopProducts, getConversionRate, getMonthlyStats } from '@/lib/sellerStats';
+import { 
+  getDailySales, 
+  getTopProducts, 
+  getConversionRate, 
+  getMonthlyStats,
+  type DailySales,
+  type TopProduct
+} from '@/lib/sellerStats';
+import React from 'react';
 
+// ✅ Ajuster MonthlyStat pour correspondre au type retourné par getMonthlyStats
+// La fonction retourne des objets avec formattedAmount, month, monthIndex, amount, orders
+interface MonthlyStat {
+  formattedAmount: string;
+  month: string;
+  monthIndex: number;
+  amount: number;
+  orders: number;
+}
+
+// ✅ Définir Product localement
 interface Product {
   id: string;
   name: string;
@@ -44,15 +64,17 @@ interface Order {
   createdAt?: any;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: JSX.Element }> = {
-  'en_attente': { label: 'En attente', color: 'bg-amber-100 text-amber-700', icon: <Clock size={10} /> },
-  'en_preparation': { label: 'Préparation', color: 'bg-sky-100 text-sky-700', icon: <Package size={10} /> },
-  'expediee': { label: 'Expédiée', color: 'bg-violet-100 text-violet-700', icon: <Truck size={10} /> },
-  'livree': { label: 'Livrée', color: 'bg-emerald-100 text-emerald-700', icon: <CheckCircle size={10} /> },
-  'annulee': { label: 'Annulée', color: 'bg-rose-100 text-rose-700', icon: <AlertCircle size={10} /> },
+// ✅ CORRECTION : Remplacer JSX.Element par React.ReactNode
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  'en_attente': { label: 'En attente', color: 'bg-amber-100 text-amber-700', icon: React.createElement(Clock, { size: 10 }) },
+  'en_preparation': { label: 'Préparation', color: 'bg-sky-100 text-sky-700', icon: React.createElement(Package, { size: 10 }) },
+  'expediee': { label: 'Expédiée', color: 'bg-violet-100 text-violet-700', icon: React.createElement(Truck, { size: 10 }) },
+  'livree': { label: 'Livrée', color: 'bg-emerald-100 text-emerald-700', icon: React.createElement(CheckCircle, { size: 10 }) },
+  'annulee': { label: 'Annulée', color: 'bg-rose-100 text-rose-700', icon: React.createElement(AlertCircle, { size: 10 }) },
 };
 
 export default function SellerDashboard() {
+  const router = useRouter();
   const [sellerLocation, setSellerLocation] = useState('');
   const [greeting, setGreeting] = useState('');
   const [currentTime, setCurrentTime] = useState('');
@@ -72,11 +94,12 @@ export default function SellerDashboard() {
   });
 
   const [darkMode, setDarkMode] = useState(false);
-  const [dailySales, setDailySales] = useState([]);
-  const [topProducts, setTopProducts] = useState([]);
+  // ✅ Utiliser les types
+  const [dailySales, setDailySales] = useState<DailySales[]>([]);
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [conversionRate, setConversionRate] = useState(0);
   const [totalOrders, setTotalOrders] = useState(0);
-  const [monthlyStats, setMonthlyStats] = useState([]);
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStat[]>([]);
   const [statsPeriod, setStatsPeriod] = useState('30');
   const [loadingStats, setLoadingStats] = useState(true);
 
@@ -108,17 +131,21 @@ export default function SellerDashboard() {
       if (!user) {
         setHasProfile(false);
         setLoading(false);
+        router.replace('/auth/login');
         return;
       }
       
       const userRef = doc(db, 'users', user.uid);
       const unsubUser = onSnapshot(userRef, (docSnap) => {
-        const profileExists = docSnap.exists();
-        setHasProfile(profileExists);
-        
-        if (profileExists) {
-          const userData = docSnap.data();
-          setSellerLocation(userData.city || userData.region || 'Dakar');
+        if (docSnap.exists()) {
+          const d = docSnap.data();
+          const profileExists = !!(d?.displayName?.trim() && d?.phone?.trim() && d?.region?.trim());
+          setHasProfile(profileExists);
+          if (profileExists) {
+            setSellerLocation(d.city || d.region || 'Dakar');
+          }
+        } else {
+          setHasProfile(false);
         }
       });
 
@@ -202,13 +229,16 @@ export default function SellerDashboard() {
 
         setLoading(false);
 
+        // Cleanup listeners stockés pour être appelés au retour du onAuthStateChanged
         return () => {
+          unsubUser();
           unsubReviews();
           unsubProducts();
           unsubOrders();
         };
       }
 
+      setLoading(false);
       return () => unsubUser();
     });
 
@@ -222,9 +252,9 @@ export default function SellerDashboard() {
     };
     updateTime();
     const interval = setInterval(updateTime, 60000);
-    
+
     return () => { unsubscribe(); clearInterval(interval); };
-  }, []);
+  }, [router]);
 
   // Chargement des statistiques avancées
   useEffect(() => {
@@ -241,11 +271,15 @@ export default function SellerDashboard() {
           getMonthlyStats(currentUser.uid),
         ]);
         
-        setDailySales(sales);
-        setTopProducts(products);
-        setConversionRate(conversion.conversionRate);
-        setTotalOrders(conversion.totalOrders);
-        setMonthlyStats(monthly);
+        // ✅ Vérification que les données existent avant de les assigner
+        if (sales && Array.isArray(sales)) setDailySales(sales);
+        if (products && Array.isArray(products)) setTopProducts(products);
+        if (conversion) {
+          setConversionRate(conversion.conversionRate);
+          setTotalOrders(conversion.totalOrders);
+        }
+        // ✅ monthly est déjà du bon type (avec formattedAmount, month, etc.)
+        if (monthly && Array.isArray(monthly)) setMonthlyStats(monthly);
       } catch (error) {
         console.error('Erreur chargement stats:', error);
       } finally {
@@ -323,7 +357,6 @@ export default function SellerDashboard() {
             <div>
               <p className="text-emerald-100 text-sm font-medium">{greeting}</p>
               <p className="text-3xl font-black mt-1 tracking-tight">Espace Vendeur</p>
-              {/* ⭐ Affichage de la note et du nombre d'avis - SYNCHRONISÉ */}
               <p className="text-xs text-emerald-100 mt-1 flex items-center gap-1">
                 <Star size={10} className="text-amber-300" />
                 {rating}/5 • {reviewCount} avis
@@ -514,8 +547,12 @@ export default function SellerDashboard() {
               <div className="h-[300px] flex items-center justify-center">
                 <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
               </div>
-            ) : (
+            ) : dailySales.length > 0 ? (
               <SalesChart data={dailySales} />
+            ) : (
+              <div className="h-[300px] flex items-center justify-center text-gray-400">
+                Aucune donnée disponible
+              </div>
             )}
           </div>
 

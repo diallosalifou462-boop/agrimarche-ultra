@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   collection, query, where, orderBy, onSnapshot,
@@ -266,7 +267,7 @@ export default function SellerProductsPage() {
                 {/* Image */}
                 <div className="aspect-video bg-gray-100 relative overflow-hidden">
                   {product.images?.[0] ? (
-                    <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover" />
+                    <Image src={product.images[0]} alt={product.name} fill style={{ objectFit: "cover" }} sizes="80px" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-4xl">🌾</div>
                   )}
@@ -340,7 +341,7 @@ export default function SellerProductsPage() {
                 <div className="flex gap-2 flex-wrap mb-2">
                   {previewImages.map((src, i) => (
                     <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden border border-gray-200">
-                      <img src={src} alt="" className="w-full h-full object-cover" />
+                      <Image src={src} alt="" fill style={{ objectFit: "cover" }} sizes="120px" />
                       <button
                         onClick={() => removeImage(i)}
                         className="absolute top-0.5 right-0.5 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"

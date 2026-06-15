@@ -28,6 +28,7 @@ interface Product {
   id: string;
   name: string;
   price: number;
+  originalPrice?: number;
   unit: string;
   category: string;
   region: string;
@@ -499,9 +500,19 @@ export default function ProductDetailPage() {
 
               {/* PRICE */}
               <div className="mt-6">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-black text-emerald-700">{product.price.toLocaleString()}</span>
-                  <span className="text-xl text-emerald-600">FCFA</span>
+                <div className="flex flex-col gap-1">
+                  {product.originalPrice && product.originalPrice > product.price && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg text-gray-400 line-through">{product.originalPrice.toLocaleString()} FCFA</span>
+                      <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        -{Math.round((1 - product.price/product.originalPrice)*100)}%
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-black text-emerald-700">{product.price.toLocaleString()}</span>
+                    <span className="text-xl text-emerald-600">FCFA</span>
+                  </div>
                 </div>
                 <p className="text-gray-400">/ {product.unit}</p>
               </div>

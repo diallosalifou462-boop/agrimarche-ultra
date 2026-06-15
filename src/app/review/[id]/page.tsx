@@ -116,7 +116,6 @@ export default function ReviewPage() {
             link: '/seller/dashboard',
           }),
         });
-        console.log('✅ Notification vendeur avis envoyée');
       } catch (notifError) {
         console.error('Erreur envoi notification avis:', notifError);
       }

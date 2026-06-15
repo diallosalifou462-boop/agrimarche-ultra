@@ -24,13 +24,22 @@ export function SmartSearch({ value, onChange, placeholder = "Rechercher des pro
   const [focused, setFocused] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<string[]>([]);
   const [loadingAI, setLoadingAI] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  // ✅ CORRECTION : Utiliser NodeJS.Timeout au lieu de ReturnType<typeof setTimeout>
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // IA suggestions basées sur la saisie
   useEffect(() => {
-    if (!value.trim() || value.length < 3) { setAiSuggestions([]); return; }
-    clearTimeout(debounceRef.current);
+    if (!value.trim() || value.length < 3) { 
+      setAiSuggestions([]); 
+      return; 
+    }
+    
+    // Nettoyer le timeout précédent
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    
     debounceRef.current = setTimeout(async () => {
       setLoadingAI(true);
       try {
@@ -45,11 +54,23 @@ export function SmartSearch({ value, onChange, placeholder = "Rechercher des pro
         const data = await res.json();
         if (data.suggestions) setAiSuggestions(data.suggestions.slice(0, 4));
         else if (data.response) {
-          try { const p = JSON.parse(data.response); setAiSuggestions(p.suggestions ?? []); } catch {}
+          try { 
+            const p = JSON.parse(data.response); 
+            setAiSuggestions(p.suggestions ?? []); 
+          } catch {}
         }
-      } catch {}
+      } catch (error) {
+        console.error('Erreur suggestions IA:', error);
+      }
       setLoadingAI(false);
     }, 600);
+    
+    // Cleanup
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
   }, [value]);
 
   const showDropdown = focused && (value.length === 0 || aiSuggestions.length > 0);
@@ -68,7 +89,16 @@ export function SmartSearch({ value, onChange, placeholder = "Rechercher des pro
           className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
         />
         {value && (
-          <button onClick={() => { onChange(''); inputRef.current?.focus(); }} className="text-gray-400 hover:text-gray-600 transition">✕</button>
+          <button 
+            onClick={() => { 
+              onChange(''); 
+              inputRef.current?.focus(); 
+            }} 
+            className="text-gray-400 hover:text-gray-600 transition"
+            type="button"
+          >
+            ✕
+          </button>
         )}
         {loadingAI && (
           <div className="w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
@@ -84,8 +114,13 @@ export function SmartSearch({ value, onChange, placeholder = "Rechercher des pro
               {SUGGESTIONS.map((s, i) => (
                 <button
                   key={i}
-                  onMouseDown={() => { onChange(s.text); setFocused(false); }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    onChange(s.text);
+                    setFocused(false);
+                  }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-green-50 transition text-left"
+                  type="button"
                 >
                   <span className="text-lg">{s.emoji}</span>
                   <span className="text-sm text-gray-700">{s.text}</span>
@@ -101,8 +136,13 @@ export function SmartSearch({ value, onChange, placeholder = "Rechercher des pro
               {aiSuggestions.map((s, i) => (
                 <button
                   key={i}
-                  onMouseDown={() => { onChange(s); setFocused(false); }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    onChange(s);
+                    setFocused(false);
+                  }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-green-50 transition text-left"
+                  type="button"
                 >
                   <span className="text-green-500">🔍</span>
                   <span className="text-sm text-gray-700">{s}</span>

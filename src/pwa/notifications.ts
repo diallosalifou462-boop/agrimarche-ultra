@@ -50,7 +50,24 @@ export class PushNotificationsManager {
       
       this.app = firebaseApp;
       this.messaging = getMessaging(this.app as any);
-      this.setupForegroundListener(onMessage);
+      
+      // ✅ CORRECTION : Utiliser un wrapper pour adapter la signature
+      this.setupForegroundListener((payload: unknown) => {
+        const p = payload as { 
+          notification?: { title?: string; body?: string; icon?: string }; 
+          data?: Record<string, string> 
+        };
+        if (p.notification) {
+          this.showInAppNotification({
+            title: p.notification.title ?? 'Agrimarche',
+            body: p.notification.body ?? '',
+            icon: p.notification.icon,
+            url: p.data?.url,
+            data: p.data,
+          });
+        }
+      });
+      
       if (process.env.NODE_ENV === 'production') {
         await this.requestPermission();
       }
@@ -79,7 +96,7 @@ export class PushNotificationsManager {
     }
     try {
       const { getToken } = await import('firebase/messaging');
-      const currentToken = await getToken(this.messaging as Parameters<typeof getToken>[0], { vapidKey });
+      const currentToken = await getToken(this.messaging as any, { vapidKey });
       if (currentToken) {
         this.token = currentToken;
         return currentToken;
@@ -107,19 +124,15 @@ export class PushNotificationsManager {
     }
   }
 
-  private setupForegroundListener(onMessage: (messaging: unknown, cb: (payload: unknown) => void) => void): void {
+  // ✅ CORRECTION : Méthode simplifiée qui prend directement un callback
+  private setupForegroundListener(onMessageCallback: (payload: unknown) => void): void {
     if (!this.messaging) return;
-    onMessage(this.messaging, (payload: unknown) => {
-      const p = payload as { notification?: { title?: string; body?: string; icon?: string }; data?: Record<string, string> };
-      if (p.notification) {
-        this.showInAppNotification({
-          title: p.notification.title ?? 'Agrimarche',
-          body: p.notification.body ?? '',
-          icon: p.notification.icon,
-          url: p.data?.url,
-          data: p.data,
-        });
-      }
+    
+    // Importer onMessage et l'utiliser correctement
+    import('firebase/messaging').then(({ onMessage }) => {
+      onMessage(this.messaging as any, onMessageCallback);
+    }).catch(err => {
+      console.warn('[Push] Failed to setup foreground listener:', err);
     });
   }
 

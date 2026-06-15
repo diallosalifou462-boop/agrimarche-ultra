@@ -16,7 +16,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ✅ Rediriger selon le rôle
   useEffect(() => {
     const redirectBasedOnRole = async () => {
       if (user && !authLoading) {
@@ -29,6 +28,8 @@ export default function LoginPage() {
           router.push('/admin');
         } else if (role === 'seller') {
           router.push('/seller/dashboard');
+        } else if (role === 'delivery') {
+          router.push('/delivery/dashboard');
         } else {
           router.push('/main/products');
         }
@@ -51,17 +52,17 @@ export default function LoginPage() {
     try {
       const result = await signIn(email, password);
       
-      // ✅ Récupérer le rôle après connexion
       const userRef = doc(db, 'users', result.user.uid);
       const userSnap = await getDoc(userRef);
       const userData = userSnap.data();
       const role = userData?.role || 'client';
       
-      // ✅ Rediriger selon le rôle
       if (role === 'admin') {
         router.push('/admin');
       } else if (role === 'seller') {
         router.push('/seller/dashboard');
+      } else if (role === 'delivery') {
+        router.push('/delivery/dashboard');
       } else {
         router.push('/main/products');
       }

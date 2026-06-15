@@ -14,6 +14,7 @@ import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase/firebase';
 
 export function useAuth() {
+  // ✅ CORRECTION CRUCIALE : Typage correct avec User | null
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +44,7 @@ export function useAuth() {
   };
 
   const updateUserProfile = async (data: { displayName?: string; phone?: string }) => {
-    if (!user) throw new Error('Aucun utilisateur connecte');
+    if (!user) throw new Error('Aucun utilisateur connecté');
     
     try {
       if (data.displayName) {
@@ -54,7 +55,7 @@ export function useAuth() {
       await updateDoc(userRef, data);
       setProfile((prev: any) => ({ ...prev, ...data }));
     } catch (error) {
-      console.error('Erreur mise a jour:', error);
+      console.error('Erreur mise à jour:', error);
       throw error;
     }
   };
@@ -64,11 +65,12 @@ export function useAuth() {
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      // ✅ Mise à jour correcte après avoir corrigé le useState
       setUser(firebaseUser);
       
       if (firebaseUser) {
-        await fetchUserProfile(firebaseUser.uid, firebaseUser.email);
+        fetchUserProfile(firebaseUser.uid, firebaseUser.email);
       } else {
         setProfile(null);
       }

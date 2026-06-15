@@ -35,8 +35,12 @@ export function usePWA() {
     };
 
     const updatePendingCount = async () => {
-      const count = await offlineSync.getPendingOrdersCount();
-      setState(prev => ({ ...prev, pendingOrdersCount: count }));
+      try {
+        const count = await offlineSync.getPendingOrdersCount();
+        setState(prev => ({ ...prev, pendingOrdersCount: count }));
+      } catch (error) {
+        console.error('Erreur mise à jour compteur:', error);
+      }
     };
 
     window.addEventListener('online', handleOnline);
@@ -59,18 +63,44 @@ export function usePWA() {
     };
   }, []);
 
-  const install = async () => installPrompt.showInstallPrompt();
+  const install = async () => {
+    if (!installPrompt) {
+      console.warn('installPrompt non disponible');
+      return false;
+    }
+    return installPrompt.showInstallPrompt();
+  };
 
+  // ✅ CORRECTION : Vérifier que notificationsManager n'est pas null
   const requestNotifications = async () => {
-    const granted = await notificationsManager.requestPermission();
-    setState(prev => ({ ...prev, notificationsEnabled: granted }));
-    return granted;
+    if (!notificationsManager) {
+      console.warn('notificationsManager non disponible');
+      return false;
+    }
+    
+    try {
+      const granted = await notificationsManager.requestPermission();
+      setState(prev => ({ ...prev, notificationsEnabled: granted }));
+      return granted;
+    } catch (error) {
+      console.error('Erreur lors de la demande de permission:', error);
+      return false;
+    }
   };
 
   const syncNow = async () => {
-    await offlineSync.syncAllPending();
-    const count = await offlineSync.getPendingOrdersCount();
-    setState(prev => ({ ...prev, pendingOrdersCount: count }));
+    if (!offlineSync) {
+      console.warn('offlineSync non disponible');
+      return;
+    }
+    
+    try {
+      await offlineSync.syncAllPending();
+      const count = await offlineSync.getPendingOrdersCount();
+      setState(prev => ({ ...prev, pendingOrdersCount: count }));
+    } catch (error) {
+      console.error('Erreur lors de la synchronisation:', error);
+    }
   };
 
   return { ...state, install, requestNotifications, syncNow };

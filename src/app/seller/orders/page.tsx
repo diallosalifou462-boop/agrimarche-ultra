@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ShoppingBag, Search, MessageCircle, CheckCircle, XCircle,
   Truck, Package, Clock, AlertTriangle, UserX,
@@ -10,7 +11,8 @@ import {
   collection, query, where, doc, updateDoc, onSnapshot, Timestamp, getDoc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase/firebase';
-import DeliveryUpdateButton from '@/components/DeliveryUpdateButton';
+import DeliveryUpdateButton from './DeliveryUpdateButton';
+import React from 'react'; // ✅ Ajout de l'import React
 
 interface Order {
   id: string;
@@ -29,16 +31,16 @@ interface Order {
   cancelledAt?: any;
 }
 
-// ─── Helpers statut ──────────────────────────────────────────────────────────
+// ✅ CORRECTION : Remplacer JSX.Element par React.ReactNode
 const getStatusInfo = (status: string) => {
-  const map: Record<string, { label: string; color: string; icon: JSX.Element }> = {
-    en_attente:     { label: 'En attente',     color: 'bg-amber-100 text-amber-700',   icon: <Clock size={14} className="mr-1" /> },
-    en_preparation: { label: 'En préparation', color: 'bg-blue-100 text-blue-700',    icon: <Package size={14} className="mr-1" /> },
-    expediee:       { label: 'Expédiée',       color: 'bg-purple-100 text-purple-700', icon: <Truck size={14} className="mr-1" /> },
-    livree:         { label: 'Livrée',         color: 'bg-green-100 text-green-700',  icon: <CheckCircle size={14} className="mr-1" /> },
-    annulee:        { label: 'Annulée',        color: 'bg-red-100 text-red-700',      icon: <XCircle size={14} className="mr-1" /> },
+  const map: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+    en_attente:     { label: 'En attente',     color: 'bg-amber-100 text-amber-700',   icon: React.createElement(Clock, { size: 14, className: "mr-1" }) },
+    en_preparation: { label: 'En préparation', color: 'bg-blue-100 text-blue-700',    icon: React.createElement(Package, { size: 14, className: "mr-1" }) },
+    expediee:       { label: 'Expédiée',       color: 'bg-purple-100 text-purple-700', icon: React.createElement(Truck, { size: 14, className: "mr-1" }) },
+    livree:         { label: 'Livrée',         color: 'bg-green-100 text-green-700',  icon: React.createElement(CheckCircle, { size: 14, className: "mr-1" }) },
+    annulee:        { label: 'Annulée',        color: 'bg-red-100 text-red-700',      icon: React.createElement(XCircle, { size: 14, className: "mr-1" }) },
   };
-  return map[status] || { label: status, color: 'bg-gray-100 text-gray-700', icon: <></> };
+  return map[status] || { label: status, color: 'bg-gray-100 text-gray-700', icon: React.createElement(React.Fragment) };
 };
 
 export default function SellerOrdersPage() {
@@ -46,11 +48,14 @@ export default function SellerOrdersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   // ── Sync temps réel ──────────────────────────────────────────────────────
+  const router = useRouter();
+
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
+    if (authLoading) return; // Attendre que l'auth soit prête
+    if (!user) { setLoading(false); router.replace('/auth/login'); return; }
 
     const q = query(collection(db, 'orders'), where('sellerId', '==', user.uid));
 
@@ -85,7 +90,7 @@ export default function SellerOrdersPage() {
     }, (err) => { console.error(err); setLoading(false); });
 
     return () => unsub();
-  }, [user]);
+  }, [user, authLoading, router]);
 
   // ── Mise à jour statut (vendeur) ─────────────────────────────────────────
   const updateStatus = async (id: string, newStatus: string, statusLabel: string) => {
@@ -121,7 +126,6 @@ export default function SellerOrdersPage() {
             link: '/account/orders',
           }),
         });
-        console.log('✅ Notification client expédition envoyée');
       }
       
       // 🔔 NOTIFICATION AU CLIENT (quand le vendeur annule)
@@ -136,7 +140,6 @@ export default function SellerOrdersPage() {
             link: '/account/orders',
           }),
         });
-        console.log('✅ Notification client annulation envoyée');
       }
       
     } catch (err) {

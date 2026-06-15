@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { db, storage } from '@/lib/firebase/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import {
   Package, Plus, Loader2, ArrowLeft, Upload, X,
@@ -50,6 +50,7 @@ export default function AddProductPage() {
     name: '',
     description: '',
     price: '',
+    originalPrice: '',
     unit: 'kg',
     stock: '',
     category: 'legumes',
@@ -57,6 +58,28 @@ export default function AddProductPage() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // 🔒 Vérifier que le vendeur a rempli son profil avant d'ajouter un produit
+  useEffect(() => {
+    if (!user) return;
+    const checkProfile = async () => {
+      try {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (!userDoc.exists()) {
+          router.replace('/seller/register');
+          return;
+        }
+        const data = userDoc.data();
+        const isComplete = data.displayName?.trim() && data.phone?.trim() && data.region?.trim();
+        if (!isComplete) {
+          router.replace('/seller/register');
+        }
+      } catch (e) {
+        console.error('Vérification profil:', e);
+      }
+    };
+    checkProfile();
+  }, [user, router]);
 
   const showToast = (type: 'success' | 'error', message: string) => {
     setToast({ type, message });
@@ -66,7 +89,6 @@ export default function AddProductPage() {
   // Nettoyage image par IA
   const cleanImageWithAI = async (file: File): Promise<string | null> => {
     if (!REMOVE_BG_API_KEY) {
-      console.warn('Clé API Remove.bg manquante');
       showToast('error', 'Configuration API manquante');
       return null;
     }
@@ -198,6 +220,7 @@ export default function AddProductPage() {
         name: formData.name.trim(),
         description: formData.description.trim() || 'Produit de qualite, directement du producteur',
         price: Number(formData.price),
+        originalPrice: formData.originalPrice && Number(formData.originalPrice) > Number(formData.price) ? Number(formData.originalPrice) : null,
         unit: formData.unit,
         stock: formData.stock === '' ? -1 : Number(formData.stock),
         category: formData.category,
@@ -226,7 +249,6 @@ export default function AddProductPage() {
             link: '/main/products',
           }),
         });
-        console.log('✅ Notification envoyée à tous les utilisateurs');
       } catch (notifError) {
         console.error('Erreur lors de l\'envoi de la notification:', notifError);
       }
@@ -430,6 +452,25 @@ export default function AddProductPage() {
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">FCFA</span>
                 </div>
                 {errors.price && <p className="text-rose-500 text-xs mt-1">{errors.price}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-800 mb-2">
+                  Prix barré <span className="text-gray-400 text-xs font-normal">(optionnel)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={formData.originalPrice}
+                    onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
+                    placeholder="Ancien prix"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 outline-none"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">FCFA</span>
+                </div>
+                {formData.originalPrice && Number(formData.originalPrice) <= Number(formData.price) && (
+                  <p className="text-amber-500 text-xs mt-1">Doit être supérieur au prix actuel</p>
+                )}
               </div>
 
               <div>

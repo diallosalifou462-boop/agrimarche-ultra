@@ -20,6 +20,7 @@ import {
   doc,
   getDoc
 } from 'firebase/firestore';
+import React from 'react';
 
 interface Product {
   id: string;
@@ -40,12 +41,13 @@ interface Order {
   createdAt?: any;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: JSX.Element }> = {
-  'en_attente': { label: 'En attente', color: 'bg-amber-100 text-amber-700', icon: <Clock size={10} /> },
-  'en_préparation': { label: 'Préparation', color: 'bg-sky-100 text-sky-700', icon: <Package size={10} /> },
-  'expédiée': { label: 'Expédiée', color: 'bg-violet-100 text-violet-700', icon: <Truck size={10} /> },
-  'livrée': { label: 'Livrée', color: 'bg-emerald-100 text-emerald-700', icon: <CheckCircle size={10} /> },
-  'annulée': { label: 'Annulée', color: 'bg-rose-100 text-rose-700', icon: <AlertCircle size={10} /> },
+// ✅ CORRECTION : Remplacer JSX.Element par React.ReactNode
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
+  'en_attente':     { label: 'En attente',  color: 'bg-amber-100 text-amber-700',   icon: React.createElement(Clock, { size: 10 }) },
+  'en_preparation': { label: 'Préparation', color: 'bg-sky-100 text-sky-700',       icon: React.createElement(Package, { size: 10 }) },
+  'expediee':       { label: 'Expédiée',    color: 'bg-violet-100 text-violet-700', icon: React.createElement(Truck, { size: 10 }) },
+  'livree':         { label: 'Livrée',      color: 'bg-emerald-100 text-emerald-700', icon: React.createElement(CheckCircle, { size: 10 }) },
+  'annulee':        { label: 'Annulée',     color: 'bg-rose-100 text-rose-700',     icon: React.createElement(AlertCircle, { size: 10 }) },
 };
 
 export default function SellerDashboard() {
@@ -96,8 +98,9 @@ export default function SellerDashboard() {
         return;
       }
       
-      const sellerDoc = await getDoc(doc(db, 'sellers', user.uid));
-      const profileExists = sellerDoc.exists();
+      const sellerDoc = await getDoc(doc(db, 'users', user.uid));
+      const data = sellerDoc.exists() ? sellerDoc.data() : null;
+      const profileExists = !!(data?.displayName?.trim() && data?.phone?.trim() && data?.region?.trim());
       setHasProfile(profileExists);
       
       if (profileExists) {
@@ -138,7 +141,7 @@ export default function SellerDashboard() {
 
           // Stats
           const totalRevenue = ordersData.reduce((sum, o) => sum + (o.amount || 0), 0);
-          const pendingCount = ordersData.filter(o => o.status === 'en_attente' || o.status === 'en_préparation').length;
+          const pendingCount = ordersData.filter(o => o.status === 'en_attente' || o.status === 'en_preparation').length;
           
           setStats({
             revenue: totalRevenue,

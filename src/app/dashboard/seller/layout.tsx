@@ -1,7 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/firebase';
 
 const NAV_ITEMS = [
   { href: '/dashboard/seller/dashboard', icon: '📊', label: 'Vue d\'ensemble' },
@@ -12,6 +16,18 @@ const NAV_ITEMS = [
 
 export default function SellerDashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user } = useAuth();
+
+  // 🔒 Guard: vendeur connecté uniquement
+  useEffect(() => {
+    if (!user) { router.replace('/auth/login'); return; }
+    getDoc(doc(db, 'users', user.uid)).then(snap => {
+      if (!snap.exists()) { router.replace('/seller/register'); return; }
+      const role = snap.data()?.role;
+      if (!['seller', 'both', 'admin'].includes(role)) router.replace('/seller/register');
+    });
+  }, [user, router]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">

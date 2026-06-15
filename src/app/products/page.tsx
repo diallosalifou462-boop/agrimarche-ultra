@@ -5,9 +5,6 @@ import { useProducts } from '@/hooks/useProducts';
 import { ProductCard } from '@/components/ProductCard';
 
 export default function ProductsPage() {
-
-  console.log('PRODUCT PAGE LOADED');
-
   const { products, loading, error } = useProducts();
 
   return (

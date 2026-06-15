@@ -16,9 +16,6 @@ import {
   Shield,
 } from 'lucide-react';
 
-// ✅ IMPORTANT: Désactiver complètement le SSR pour cette page
-export const forceDynamic = 'force-dynamic';
-
 export default function RegisterPage() {
   const router = useRouter();
   const { signUp, user, loading: authLoading } = useAuth();
@@ -76,7 +73,7 @@ export default function RegisterPage() {
     }
   };
 
-  // ✅ Ne rien rendre côté serveur
+  // ✅ Écran de chargement côté serveur
   if (!isClient) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 flex items-center justify-center">
@@ -211,11 +208,11 @@ export default function RegisterPage() {
                 type="checkbox"
                 checked={agreeTerms}
                 onChange={(e) => setAgreeTerms(e.target.checked)}
-                className="w-4 h-4"
+                className="w-4 h-4 rounded border-gray-300"
               />
               <span className="text-sm text-gray-600">
                 J'accepte les{' '}
-                <Link href="/legal/terms" className="text-green-600">
+                <Link href="/legal/terms" className="text-green-600 hover:underline">
                   conditions générales
                 </Link>
               </span>

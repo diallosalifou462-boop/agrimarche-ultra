@@ -11,6 +11,11 @@ interface DeliveryUpdateButtonProps {
   onUpdate?: () => void;
 }
 
+interface DeliveryStep {
+  completed: boolean;
+  timestamp: string | null;  // ✅ Accepter string ou null
+}
+
 const DELIVERY_STEPS = [
   { id: 'pending', label: 'En attente', icon: Truck },
   { id: 'preparing', label: 'Préparation', icon: Truck },
@@ -35,28 +40,20 @@ export default function DeliveryUpdateButton({
     try {
       const orderRef = doc(db, 'orders', orderId);
       
-      // Mettre à jour les étapes de livraison
-      const deliverySteps = {
-        pending: { completed: stepId !== 'pending', timestamp: null },
-        preparing: { completed: stepId !== 'preparing', timestamp: null },
-        shipped: { completed: stepId !== 'shipped', timestamp: null },
-        out_for_delivery: { completed: stepId !== 'out_for_delivery', timestamp: null },
-        delivered: { completed: stepId !== 'delivered', timestamp: null },
+      // ✅ Initialiser les étapes de livraison avec timestamp: null
+      const deliverySteps: Record<string, DeliveryStep> = {
+        pending: { completed: false, timestamp: null },
+        preparing: { completed: false, timestamp: null },
+        shipped: { completed: false, timestamp: null },
+        out_for_delivery: { completed: false, timestamp: null },
+        delivered: { completed: false, timestamp: null },
       };
 
-      // Marquer l'étape sélectionnée comme complétée
-      if (deliverySteps[stepId as keyof typeof deliverySteps]) {
-        deliverySteps[stepId as keyof typeof deliverySteps] = {
-          completed: true,
-          timestamp: new Date().toISOString(),
-        };
-      }
-
-      // Marquer toutes les étapes précédentes comme complétées
+      // ✅ Marquer toutes les étapes jusqu'à stepId inclus comme complétées
       const stepIndex = DELIVERY_STEPS.findIndex(s => s.id === stepId);
       for (let i = 0; i <= stepIndex; i++) {
         const step = DELIVERY_STEPS[i];
-        deliverySteps[step.id as keyof typeof deliverySteps] = {
+        deliverySteps[step.id] = {
           completed: true,
           timestamp: new Date().toISOString(),
         };

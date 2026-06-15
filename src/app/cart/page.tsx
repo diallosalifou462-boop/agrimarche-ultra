@@ -25,6 +25,7 @@ interface CartItem {
     id: string;
     name: string;
     price: number;
+    originalPrice?: number;
     unit: string;
     category?: string;
     images?: string[];
@@ -198,6 +199,9 @@ export default function CartPage() {
                     )}
                   </p>
                   <div className="mt-2">
+                    {item.product.originalPrice && item.product.originalPrice > item.product.price && (
+                      <p className="text-gray-400 text-xs line-through">{formatPrice(item.product.originalPrice)}</p>
+                    )}
                     <p className="text-emerald-600 font-medium text-base">
                       {formatPrice(item.product.price)}
                       <span className="text-[7px] font-light text-gray-400 ml-1">/{item.product.unit}</span>

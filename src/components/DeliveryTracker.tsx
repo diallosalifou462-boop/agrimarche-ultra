@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { MapPin, Truck, Package, CheckCircle, Clock, Box, Navigation } from 'lucide-react';
+import React from 'react';
 
 interface DeliveryStep {
   label: string;
@@ -17,14 +18,15 @@ interface DeliveryTrackerProps {
   estimatedDate?: Date | string | any;
 }
 
-const stepIcons: Record<string, JSX.Element> = {
-  'Commande validée': <CheckCircle size={16} />,
-  'Préparation': <Package size={16} />,
-  'Prêt à expédier': <Box size={16} />,
-  'Pris en charge': <Truck size={16} />,
-  'En transit': <Truck size={16} />,
-  'Arrivé à destination': <MapPin size={16} />,
-  'Livré': <CheckCircle size={16} />,
+// ✅ CORRECTION : Remplacer JSX.Element par React.ReactNode
+const stepIcons: Record<string, React.ReactNode> = {
+  'Commande validée': React.createElement(CheckCircle, { size: 16 }),
+  'Préparation': React.createElement(Package, { size: 16 }),
+  'Prêt à expédier': React.createElement(Box, { size: 16 }),
+  'Pris en charge': React.createElement(Truck, { size: 16 }),
+  'En transit': React.createElement(Truck, { size: 16 }),
+  'Arrivé à destination': React.createElement(MapPin, { size: 16 }),
+  'Livré': React.createElement(CheckCircle, { size: 16 }),
 };
 
 // Fonction pour formater la date de manière sécurisée
@@ -69,6 +71,18 @@ const formatDate = (date: any): string => {
   return 'Date inconnue';
 };
 
+// Helper pour récupérer l'icône correspondante
+const getStepIcon = (iconName: string, isCompleted: boolean) => {
+  const Icon = stepIcons[iconName];
+  if (Icon) {
+    return Icon;
+  }
+  // Fallback par défaut
+  return isCompleted ? 
+    React.createElement(CheckCircle, { size: 18 }) : 
+    React.createElement(Clock, { size: 16 });
+};
+
 export default function DeliveryTracker({ steps, currentStatus, estimatedDate }: DeliveryTrackerProps) {
   const [activeStep, setActiveStep] = useState(0);
 
@@ -97,7 +111,7 @@ export default function DeliveryTracker({ steps, currentStatus, estimatedDate }:
             )}
             {isCompleted && (
               <p className="text-emerald-100 text-xs mt-1 flex items-center gap-1">
-                <CheckCircle size={12} /> Livrée avec succès
+                {React.createElement(CheckCircle, { size: 12 })} Livrée avec succès
               </p>
             )}
           </div>
@@ -135,9 +149,11 @@ export default function DeliveryTracker({ steps, currentStatus, estimatedDate }:
                       }`}
                     >
                       {step.completed ? (
-                        <CheckCircle size={18} />
+                        React.createElement(CheckCircle, { size: 18 })
                       ) : (
-                        <span className="text-sm">{step.icon}</span>
+                        <span className="text-sm">
+                          {getStepIcon(step.icon, step.completed)}
+                        </span>
                       )}
                     </div>
                     {!isLast && (
@@ -169,7 +185,7 @@ export default function DeliveryTracker({ steps, currentStatus, estimatedDate }:
                     {/* Indicateur "étape actuelle" */}
                     {isCurrent && (
                       <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 rounded-full">
-                        <Clock size={10} className="text-amber-600" />
+                        {React.createElement(Clock, { size: 10, className: "text-amber-600" })}
                         <span className="text-[8px] font-medium text-amber-600">En cours</span>
                       </div>
                     )}

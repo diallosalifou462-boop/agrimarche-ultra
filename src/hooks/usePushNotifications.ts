@@ -13,10 +13,35 @@ export function usePushNotifications() {
   }, []);
 
   const requestPermission = async (): Promise<boolean> => {
-    const granted = await notificationsManager.requestPermission();
-    setPermission(Notification.permission);
-    return granted;
+    // ✅ Vérification complète
+    if (typeof window === 'undefined') {
+      return false;
+    }
+    
+    if (!notificationsManager) {
+      console.warn('notificationsManager non disponible');
+      return false;
+    }
+    
+    if (typeof notificationsManager.requestPermission !== 'function') {
+      console.warn('notificationsManager.requestPermission n\'est pas une fonction');
+      return false;
+    }
+    
+    try {
+      const granted = await notificationsManager.requestPermission();
+      setPermission(Notification.permission);
+      return granted;
+    } catch (error) {
+      console.error('Erreur lors de la demande de permission:', error);
+      return false;
+    }
   };
 
-  return { permission, isSupported, requestPermission, isGranted: permission === 'granted' };
+  return { 
+    permission, 
+    isSupported, 
+    requestPermission, 
+    isGranted: permission === 'granted' 
+  };
 }

@@ -1,91 +1,57 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
-import { requestNotificationPermission, onMessageListener } from '@/lib/firebase/messaging';
-import { Bell, BellOff } from 'lucide-react';
-
-// ✅ Ajouter un type pour la notification
-interface NotificationPayload {
-  notification: {
-    title: string;
-    body: string;
-  };
-  data?: any;
-}
+import { useState } from 'react';
+import { Bell } from 'lucide-react';
 
 export function NotificationBell() {
-  const { user } = useAuth();
-  const [permission, setPermission] = useState<'default' | 'granted' | 'denied'>('default');
-  const [notification, setNotification] = useState<NotificationPayload | null>(null);
+  const [showPanel, setShowPanel] = useState(false);
+  const [permission, setPermission] = useState<NotificationPermission>('default');
 
-  // Vérifier l'état actuel des permissions
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setPermission(Notification.permission as 'default' | 'granted' | 'denied');
-    }
-  }, []);
-
-  // Écouter les notifications reçues
-  useEffect(() => {
-    const handleMessage = async () => {
-      const payload = await onMessageListener() as NotificationPayload;
-      if (payload) {
-        setNotification(payload);
-        // Afficher une notification système
-        if (Notification.permission === 'granted') {
-          new Notification(payload.notification.title, {
-            body: payload.notification.body,
-            icon: '/logo.png',
-          });
-        }
-      }
-    };
-    
-    handleMessage();
-  }, []);
-
-  // Demander la permission
   const requestPermission = async () => {
-    if (user) {
-      const token = await requestNotificationPermission(user.uid);
-      if (token) {
-        setPermission('granted');
-      }
-    } else {
-      alert('Connectez-vous pour activer les notifications');
+    if ('Notification' in window) {
+      const perm = await Notification.requestPermission();
+      setPermission(perm);
     }
   };
 
-  // Si déjà activé, afficher une cloche avec notification
-  if (permission === 'granted') {
-    return (
-      <div className="relative">
-        <Bell size={18} className="text-white" />
-        {notification && (
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />
-        )}
-      </div>
-    );
-  }
-
-  // Si pas encore décidé, afficher un bouton
   if (permission === 'default') {
     return (
       <button
         onClick={requestPermission}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/20 text-white text-xs font-medium hover:bg-emerald-500/30 transition"
+        className="px-3 py-1.5 bg-emerald-500/10 text-emerald-600 rounded-lg text-xs font-medium hover:bg-emerald-500/20 transition"
       >
-        <Bell size={14} />
-        Activer les notifications
+        🔔 Activer
       </button>
     );
   }
 
-  // Si refusé, afficher cloche barrée
+  if (permission === 'denied') {
+    return null;
+  }
+
   return (
     <div className="relative">
-      <BellOff size={18} className="text-gray-400" />
+      <button
+        onClick={() => setShowPanel(!showPanel)}
+        className="relative p-2 rounded-lg hover:bg-gray-100 transition"
+      >
+        <Bell size={18} className="text-gray-600" />
+      </button>
+
+      {showPanel && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setShowPanel(false)} />
+          <div className="absolute right-0 mt-2 z-50 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3">
+              <h3 className="text-white font-semibold text-sm">Notifications</h3>
+            </div>
+            <div className="p-8 text-center text-gray-400">
+              <Bell size={32} className="mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Aucune notification</p>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
