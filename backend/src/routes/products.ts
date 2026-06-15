@@ -1,9 +1,11 @@
+# 1. D'abord, corrige le fichier products.ts (supprime adminMiddleware)
+@'
 // backend/src/routes/products.ts
 import { Router, Request, Response } from 'express';
 import { body, query, param, validationResult } from 'express-validator';
 import admin from 'firebase-admin';
 import rateLimit from 'express-rate-limit';
-import { authMiddleware } from '../middleware/auth';  // ✅ adminMiddleware supprimé
+import { authMiddleware } from '../middleware/auth';
 
 const router = Router();
 const db = () => admin.firestore();
@@ -22,7 +24,6 @@ function validationErrors(req: Request, res: Response): boolean {
 }
 
 // ─── GET /api/products ────────────────────────────────────────────────────────
-// Catalogue public avec filtres et pagination curseur
 router.get(
   '/',
   [
@@ -89,7 +90,6 @@ router.get(
 );
 
 // ─── POST /api/products ───────────────────────────────────────────────────────
-// Création — vendeur authentifié uniquement
 router.post(
   '/',
   authMiddleware,
@@ -111,7 +111,6 @@ router.post(
   async (req: Request, res: Response) => {
     if (validationErrors(req, res)) return;
 
-    // Vérifier que l'utilisateur est vendeur
     if (req.user?.role !== 'seller' && req.user?.role !== 'admin') {
       return res.status(403).json({ error: 'Réservé aux vendeurs' });
     }
@@ -151,7 +150,6 @@ router.post(
 );
 
 // ─── PATCH /api/products/:id ──────────────────────────────────────────────────
-// Mise à jour partielle — vendeur propriétaire ou admin
 router.patch(
   '/:id',
   authMiddleware,
@@ -179,12 +177,10 @@ router.patch(
       if (!doc.exists) return res.status(404).json({ error: 'Produit introuvable' });
 
       const data = doc.data()!;
-      // Seul le vendeur propriétaire ou un admin peut modifier
       if (data.sellerId !== req.user?.uid && req.user?.role !== 'admin') {
         return res.status(403).json({ error: 'Accès interdit' });
       }
 
-      // Champs protégés : on ne peut pas changer sellerId
       const allowed = ['name', 'description', 'price', 'originalPrice', 'stock', 'unit',
         'categoryId', 'category', 'images', 'isOrganic', 'location', 'tags', 'status'];
       const updates: Record<string, any> = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
@@ -201,7 +197,6 @@ router.patch(
 );
 
 // ─── DELETE /api/products/:id ─────────────────────────────────────────────────
-// Suppression — vendeur propriétaire ou admin
 router.delete(
   '/:id',
   authMiddleware,
@@ -223,7 +218,6 @@ router.delete(
         return res.status(403).json({ error: 'Accès interdit' });
       }
 
-      // Suppression douce : on marque inactive plutôt que de supprimer définitivement
       await docRef.update({
         status: 'inactive',
         deletedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -238,7 +232,6 @@ router.delete(
 );
 
 // ─── GET /api/products/seller/:sellerId ───────────────────────────────────────
-// Produits d'un vendeur spécifique (public)
 router.get(
   '/seller/:sellerId',
   [param('sellerId').isString().trim()],
