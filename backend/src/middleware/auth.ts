@@ -1,7 +1,6 @@
-import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 
-// Initialisation sécurisée (évite les doublons)
 if (!getApps().length) {
   initializeApp({
     credential: cert({
