@@ -1,14 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
+import admin from 'firebase-admin';
 
-if (!getApps().length) {
-  initializeApp({
-    credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID!,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')!,
-    }),
+try {
+  admin.app();
+} catch {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    } as admin.ServiceAccount),
   });
 }
 
@@ -33,12 +34,10 @@ export async function authMiddleware(
     const token = req.headers.authorization?.split('Bearer ')[1];
 
     if (!token) {
-      return res.status(401).json({
-        error: 'Non authentifié',
-      });
+      return res.status(401).json({ error: 'Non authentifié' });
     }
 
-    const decoded = await getAuth().verifyIdToken(token);
+    const decoded = await admin.auth().verifyIdToken(token);
 
     req.user = {
       uid: decoded.uid,
@@ -47,7 +46,7 @@ export async function authMiddleware(
     };
 
     next();
-  } catch (error) {
+  } catch {
     return res.status(401).json({
       error: 'Token invalide ou expiré',
     });
