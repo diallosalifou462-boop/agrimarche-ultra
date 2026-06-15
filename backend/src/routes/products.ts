@@ -1,5 +1,4 @@
-# 1. D'abord, corrige le fichier products.ts (supprime adminMiddleware)
-@'
+
 // backend/src/routes/products.ts
 import { Router, Request, Response } from 'express';
 import { body, query, param, validationResult } from 'express-validator';
