@@ -3,7 +3,7 @@ import { Router, Request, Response } from 'express';
 import { body, query, param, validationResult } from 'express-validator';
 import admin from 'firebase-admin';
 import rateLimit from 'express-rate-limit';
-import { authMiddleware, adminMiddleware } from '../middleware/auth';
+import { authMiddleware } from '../middleware/auth';  // ✅ adminMiddleware supprimé
 
 const router = Router();
 const db = () => admin.firestore();
@@ -76,10 +76,10 @@ router.get(
     try {
       const productId = String(req.params.id);
 
-const doc = await db()
-  .collection('products')
-  .doc(productId)
-  .get();
+      const doc = await db()
+        .collection('products')
+        .doc(productId)
+        .get();
       if (!doc.exists) return res.status(404).json({ error: 'Produit introuvable' });
       res.json({ id: doc.id, ...doc.data() });
     } catch {
@@ -171,9 +171,9 @@ router.patch(
     try {
       const productId = String(req.params.id);
 
-const docRef = db()
-  .collection('products')
-  .doc(productId);
+      const docRef = db()
+        .collection('products')
+        .doc(productId);
       const doc = await docRef.get();
 
       if (!doc.exists) return res.status(404).json({ error: 'Produit introuvable' });
@@ -211,9 +211,9 @@ router.delete(
     try {
       const productId = String(req.params.id);
 
-const docRef = db()
-  .collection('products')
-  .doc(productId);
+      const docRef = db()
+        .collection('products')
+        .doc(productId);
       const doc = await docRef.get();
 
       if (!doc.exists) return res.status(404).json({ error: 'Produit introuvable' });
