@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
-import * as admin from 'firebase-admin';
+import { initializeApp, cert } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
 
-admin.initializeApp({
-  credential: admin.credential.cert({
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  } as admin.ServiceAccount),
+initializeApp({
+  credential: cert({
+    projectId: process.env.FIREBASE_PROJECT_ID!,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')!,
+  }),
 });
 
 declare global {
@@ -33,7 +34,7 @@ export async function authMiddleware(
       return res.status(401).json({ error: 'Non authentifié' });
     }
 
-    const decoded = await admin.auth().verifyIdToken(token);
+    const decoded = await getAuth().verifyIdToken(token);
 
     req.user = {
       uid: decoded.uid,
